@@ -81,6 +81,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
+        // Apply pending migrations
         context.Database.Migrate();
     }
     catch (Exception ex)

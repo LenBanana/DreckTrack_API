@@ -20,4 +20,12 @@ RUN dotnet publish "DreckTrack_API.csproj" -c $BUILD_CONFIGURATION -o /app/publi
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "DreckTrack_API.dll"]
+
+# Copy the migration script into the image
+COPY ./migrate-and-start.sh .
+
+# Give execution permissions to the script
+RUN chmod +x ./migrate-and-start.sh
+
+# Use the script as the entry point
+ENTRYPOINT ["./migrate-and-start.sh"]
