@@ -1,0 +1,6 @@
+﻿services:
+  drecktrack_api:
+    image: drecktrack_api
+    build:
+      context: .
+      dockerfile: DreckTrack_API/Dockerfile
