@@ -15,7 +15,6 @@ namespace DreckTrack_API.Controllers;
 [Authorize]
 [Route("api/[controller]")]
 public class GameController(
-    UserManager<ApplicationUser> userManager,
     IHttpClientFactory httpClientFactory,
     IOptions<RawgSettings> rawgSettings)
     : ControllerBase
@@ -100,12 +99,10 @@ public class GameController(
                 // Return the RAW JSON response directly
                 return Content(content, "application/json");
             }
-            else
-            {
-                // Optionally, you can handle different status codes here
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, errorContent);
-            }
+
+            // Optionally, you can handle different status codes here
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, errorContent);
         }
         catch (Exception ex)
         {

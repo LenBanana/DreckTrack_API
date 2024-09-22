@@ -1,7 +1,6 @@
 namespace DreckTrack_API.Models;
 
-public class RawgSettings
+public class RawgSettings : ApiSettings
 {
-    public string ApiKey { get; set; }
-    public string BaseUrl { get; set; }
+    
 }

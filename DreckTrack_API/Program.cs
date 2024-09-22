@@ -18,6 +18,11 @@ builder.Services.AddHttpClient("RawgClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Rawg:BaseUrl"] ?? throw new InvalidOperationException());
 });
+builder.Services.Configure<TestDiveSettings>(builder.Configuration.GetSection("TestDive"));
+builder.Services.AddHttpClient("TestDiveClient", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["TestDive:BaseUrl"] ?? throw new InvalidOperationException());
+});
 
 
 // Add services to the container.
