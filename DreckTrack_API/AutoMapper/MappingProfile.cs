@@ -14,19 +14,21 @@ public class MappingProfile : Profile
         // Base mapping
         CreateMap<CollectibleItemDto, CollectibleItem>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.ExternalIds, opt => opt.Ignore())
             .Include<BookDto, Book>()
             .Include<MovieDto, Movie>()
-            .Include<ShowDto, Show>();
+            .Include<ShowDto, Show>()
+            .Include<GameDto, Game>();
         CreateMap<CollectibleItem, CollectibleItemDto>()
             .Include<Book, BookDto>()
             .Include<Movie, MovieDto>()
-            .Include<Show, ShowDto>();
+            .Include<Show, ShowDto>()
+            .Include<Game, GameDto>();
 
         // Derived mappings
         CreateMap<BookDto, Book>().ReverseMap();
         CreateMap<MovieDto, Movie>().ReverseMap();
         CreateMap<ShowDto, Show>().ReverseMap();
+        CreateMap<GameDto, Game>().ReverseMap();
         CreateMap<SeasonDto, Season>().ReverseMap();
         CreateMap<EpisodeDto, Episode>().ReverseMap();
 

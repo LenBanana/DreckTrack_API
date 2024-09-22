@@ -36,6 +36,7 @@ public class AddUserCollectibleItemDtoToUserCollectibleItemConverter : ITypeConv
             "book" => context.Mapper.Map<Book>(dto),
             "movie" => context.Mapper.Map<Movie>(dto),
             "show" => context.Mapper.Map<Show>(dto),
+            "game" => context.Mapper.Map<Game>(dto),
             _ => throw new InvalidOperationException($"Unknown CollectibleItemDto type: {dto.ItemType}")
         };
     }

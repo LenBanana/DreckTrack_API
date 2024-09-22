@@ -30,6 +30,7 @@ public class CollectibleItemDtoConverter : JsonConverter<CollectibleItemDto>
             "Book" => typeof(BookDto),
             "Movie" => typeof(MovieDto),
             "Show" => typeof(ShowDto),
+            "Game" => typeof(GameDto),
             _ => throw new JsonException($"Unknown ItemType: {itemType}")
         };
 
@@ -48,7 +49,6 @@ public class CollectibleItemDtoConverter : JsonConverter<CollectibleItemDto>
         // Write common properties
         writer.WritePropertyName("id");
         writer.WriteStringValue(value.Id?.ToString());
-
         writer.WriteString("title", value.Title);
         writer.WriteString("description", value.Description);
         if (value.ReleaseDate.HasValue)
@@ -59,10 +59,28 @@ public class CollectibleItemDtoConverter : JsonConverter<CollectibleItemDto>
             writer.WriteNumber("averageRating", value.AverageRating.Value);
         if (value.RatingsCount.HasValue)
             writer.WriteNumber("ratingsCount", value.RatingsCount.Value);
+        writer.WriteStartArray("genres");
+        foreach (var genre in value.Genres ?? Enumerable.Empty<string>())
+        {
+            writer.WriteStringValue(genre);
+        }
+        writer.WriteEndArray();
+        writer.WriteStartArray("tags");
+        foreach (var tag in value.Tags ?? Enumerable.Empty<string>())
+        {
+            writer.WriteStringValue(tag);
+        }
+        writer.WriteEndArray();
+        writer.WriteString("updatedAt", value.UpdatedAt);
 
         // Serialize ExternalIds
-        writer.WritePropertyName("externalIds");
-        JsonSerializer.Serialize(writer, value.ExternalIds, options);
+        writer.WriteStartArray("externalIds");
+        foreach (var externalId in value.ExternalIds)
+        {
+            externalId.CollectibleItemId = value.Id ?? Guid.Empty;
+            JsonSerializer.Serialize(writer, externalId, options);
+        }
+        writer.WriteEndArray();
 
         // Serialize properties specific to the derived type
         switch (value)
@@ -87,6 +105,10 @@ public class CollectibleItemDtoConverter : JsonConverter<CollectibleItemDto>
             case MovieDto movie:
                 // writer.WriteString("director", movie.Director);
                 writer.WriteNumber("duration", movie.Duration ?? 0);
+                break;
+            
+            case GameDto game:
+                writer.WriteString("platform", game.Platform);
                 break;
 
             case ShowDto show:

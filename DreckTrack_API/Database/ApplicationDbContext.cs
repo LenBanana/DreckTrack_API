@@ -14,10 +14,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     }
 
     public DbSet<CollectibleItem> CollectibleItems { get; set; }
+    public DbSet<Game> Games { get; set; }
     public DbSet<Book> Books { get; set; }
     public DbSet<Movie> Movies { get; set; }
     public DbSet<Show> Shows { get; set; }
     public DbSet<UserCollectibleItem> UserCollectibleItems { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -28,7 +30,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasDiscriminator<string>("ItemType")
             .HasValue<Book>("Book")
             .HasValue<Movie>("Movie")
-            .HasValue<Show>("Show");
+            .HasValue<Show>("Show")
+            .HasValue<Game>("Game");
 
         // Configure many-to-many relationship
         builder.Entity<UserCollectibleItem>()

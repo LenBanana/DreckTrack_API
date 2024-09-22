@@ -344,6 +344,38 @@ namespace DreckTrack_API.Migrations
                     b.ToTable("UserCollectibleItems");
                 });
 
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("Revoked")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -496,6 +528,16 @@ namespace DreckTrack_API.Migrations
                     b.HasDiscriminator().HasValue("Book");
                 });
 
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Game", b =>
+                {
+                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
+
+                    b.Property<string>("Platform")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue("Game");
+                });
+
             modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Movie", b =>
                 {
                     b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
@@ -567,6 +609,17 @@ namespace DreckTrack_API.Migrations
                         .IsRequired();
 
                     b.Navigation("CollectibleItem");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("DreckTrack_API.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

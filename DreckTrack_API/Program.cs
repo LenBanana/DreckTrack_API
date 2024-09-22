@@ -2,13 +2,22 @@ using System.Text;
 using System.Text.Json;
 using DreckTrack_API.AutoMapper.TypeConverter;
 using DreckTrack_API.Database;
+using DreckTrack_API.Models;
 using DreckTrack_API.Models.Entities;
+using DreckTrack_API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<RawgSettings>(builder.Configuration.GetSection("Rawg"));
+builder.Services.AddHttpClient("RawgClient", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Rawg:BaseUrl"] ?? throw new InvalidOperationException());
+});
+
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -32,34 +41,41 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// Register RefreshTokenService
+builder.Services.AddScoped<RefreshTokenService>();
+
 // Authentication with JWT
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var secret = jwtSettings["Secret"];
-    if (string.IsNullOrEmpty(secret))
     {
-        throw new Exception("JWT Secret is missing");
-    }
-    options.TokenValidationParameters = new TokenValidationParameters
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
-    };
-});
+        var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+        var secret = jwtSettings["Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new Exception("JWT Secret is missing");
+        }
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+        };
+    });
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
+
+// Configuration
+var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -67,10 +83,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policyBuilder =>
     {
         policyBuilder
-            .SetIsOriginAllowed(hostname => true)
-            .AllowAnyOrigin()
+            .WithOrigins(origins)
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
