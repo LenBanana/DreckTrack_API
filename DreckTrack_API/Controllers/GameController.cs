@@ -1,4 +1,5 @@
 using AutoMapper;
+using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models;
 using DreckTrack_API.Models.Entities;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace DreckTrack_API.Controllers;
 
+[ServiceFilter(typeof(UserExistenceFilter))]
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
