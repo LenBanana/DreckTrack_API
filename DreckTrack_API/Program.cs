@@ -66,7 +66,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policyBuilder =>
     {
-        policyBuilder.AllowAnyOrigin()
+        policyBuilder
+            .SetIsOriginAllowed(hostname => true)
+            .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -96,7 +98,7 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (true) //app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
