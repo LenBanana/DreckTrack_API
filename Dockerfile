@@ -17,9 +17,6 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "DreckTrack_API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-RUN dotnet ef migrations add InitialCreate --project DreckTrack_API.csproj --startup-project DreckTrack_API.csproj
-RUN dotnet ef database update --project DreckTrack_API.csproj --startup-project DreckTrack_API.csproj
-
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
