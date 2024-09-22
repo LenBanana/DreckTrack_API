@@ -43,6 +43,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
 
 // Register RefreshTokenService
 builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddScoped<MailService>();
 
 // Authentication with JWT
 builder.Services.AddAuthentication(options =>

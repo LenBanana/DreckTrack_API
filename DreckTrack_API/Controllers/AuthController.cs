@@ -15,7 +15,8 @@ public class AuthController(
     UserManager<ApplicationUser> userManager,
     IConfiguration configuration,
     IMapper mapper,
-    RefreshTokenService refreshTokenService)
+    RefreshTokenService refreshTokenService,
+    MailService mailService)
     : ControllerBase
 {
     private readonly IMapper _mapper = mapper;
@@ -23,6 +24,10 @@ public class AuthController(
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterUserDto model)
     {
+        var frontendUrl = configuration["FrontendSettings:ConfirmEmailUrl"];
+        if (frontendUrl == null)
+            return StatusCode(500);
+        
         var user = new ApplicationUser
         {
             UserName = model.Email,
@@ -32,13 +37,20 @@ public class AuthController(
 
         var result = await userManager.CreateAsync(user, model.Password);
 
-        if (result.Succeeded)
-        {
-            return Ok();
-        }
+        if (!result.Succeeded) return BadRequest(result.Errors);
 
-        return BadRequest(result.Errors);
+        // Generate the email confirmation token
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        // Construct the full confirmation link pointing to your UI
+        var confirmationLink = $"{frontendUrl}?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+        // Send the email confirmation mail
+        await mailService.SendEmailConfirmationMailAsync(user, confirmationLink);
+
+        return Ok(new { message = "Registration successful. Please check your email to confirm your account." });
     }
+
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginUserDto model)
@@ -47,9 +59,13 @@ public class AuthController(
         var domain = configuration["Cors:Domain"];
         if (jwtRefreshTokenDuration == null || domain == null)
             return StatusCode(500);
+
         var user = await userManager.FindByEmailAsync(model.Email);
         if (user == null || !await userManager.CheckPasswordAsync(user, model.Password))
             return Unauthorized();
+
+        if (!await userManager.IsEmailConfirmedAsync(user))
+            return Unauthorized(new { message = "Email not confirmed. Please check your inbox." });
 
         var tokens = JwtGeneration.GenerateTokens(user, configuration);
         if (tokens.AccessToken == null || tokens.RefreshToken == null)
@@ -72,6 +88,25 @@ public class AuthController(
 
         return Ok(new { token = tokens.AccessToken });
     }
+
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return BadRequest(new { message = "Invalid user ID." });
+        }
+
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        if (result.Succeeded)
+        {
+            return Ok(new { message = "Email confirmed successfully!" });
+        }
+
+        return BadRequest(new { message = "Email confirmation failed." });
+    }
+
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh()
@@ -111,9 +146,9 @@ public class AuthController(
         };
         Response.Cookies.Append("refreshToken", tokens.RefreshToken, cookieOptions);
 
-        return Ok(new 
-        { 
-            accessToken = tokens.AccessToken 
+        return Ok(new
+        {
+            accessToken = tokens.AccessToken
         });
     }
 
@@ -136,4 +171,3 @@ public class AuthController(
         return Ok(new { message = "Logged out successfully." });
     }
 }
-
