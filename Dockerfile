@@ -4,9 +4,6 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Copy the migration script into the image
-COPY --chmod=755 migrate-and-start.sh /app/migrate-and-start.sh
-
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
@@ -20,9 +17,10 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "DreckTrack_API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+RUN dotnet ef migrations add InitialCreate --project DreckTrack_API.csproj --startup-project DreckTrack_API.csproj
+RUN dotnet ef database update --project DreckTrack_API.csproj --startup-project DreckTrack_API.csproj
+
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-
-# Use the script as the entry point
-ENTRYPOINT ["./migrate-and-start.sh"]
+ENTRYPOINT ["dotnet", "DreckTrack_API.dll"]
