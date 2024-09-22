@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AutoMapper;
+using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models.Dto;
 using DreckTrack_API.Models.Entities;
@@ -12,8 +13,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DreckTrack_API.Controllers;
 
-[ApiController]
+[ServiceFilter(typeof(UserExistenceFilter))]
 [Authorize]
+[ApiController]
 [Route("api/[controller]")]
 public class UserCollectionController(
     ApplicationDbContext context,
@@ -34,6 +36,10 @@ public class UserCollectionController(
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserCollectibleItemDto>>> GetUserCollection([FromQuery] string? itemType, [FromQuery] CollectibleStatus? status, [FromQuery] string? filterTerm, int pageNumber = 1, int pageSize = 10)
     {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return Unauthorized();
+        
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
         {

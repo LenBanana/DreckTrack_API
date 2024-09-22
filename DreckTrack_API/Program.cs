@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using DreckTrack_API.AutoMapper.TypeConverter;
+using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models;
 using DreckTrack_API.Models.Entities;
@@ -41,9 +42,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Register RefreshTokenService
+// Register Services
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<MailService>();
+
+// Add Scopes
+builder.Services.AddScoped<UserExistenceFilter>();
 
 // Authentication with JWT
 builder.Services.AddAuthentication(options =>
@@ -115,7 +119,7 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.
-if (true) //app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
