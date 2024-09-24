@@ -1,4 +1,5 @@
 using DreckTrack_API.Models.Entities.Collectibles;
+using DreckTrack_API.Models.Entities.Collectibles.Items;
 using Microsoft.AspNetCore.Identity;
 
 namespace DreckTrack_API.Models.Entities;

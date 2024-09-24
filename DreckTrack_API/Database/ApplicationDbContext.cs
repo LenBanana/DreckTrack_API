@@ -1,5 +1,10 @@
 using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Models.Entities.Collectibles;
+using DreckTrack_API.Models.Entities.Collectibles.Items;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Book;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Game;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Movie;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Show;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

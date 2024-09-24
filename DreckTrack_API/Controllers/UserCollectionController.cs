@@ -1,10 +1,16 @@
+using System.Linq.Expressions;
 using System.Security.Claims;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models.Dto;
+using DreckTrack_API.Models.Dto.Items;
 using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Models.Entities.Collectibles;
+using DreckTrack_API.Models.Entities.Collectibles.Items;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Book;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Show;
 using DreckTrack_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -24,80 +30,121 @@ public class UserCollectionController(
     : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
-    
+
     private (int pageNumber, int pageSize) ValidatePageValues(int pageNumber, int pageSize, int totalItems)
     {
         pageSize = pageSize > 100 ? 100 : pageSize < 1 ? 1 : pageSize;
-        pageNumber = pageNumber < 1 ? 1 : pageNumber > (totalItems / pageSize) + 1 ? (totalItems / pageSize) + 1 : pageNumber;
+        pageNumber = pageNumber < 1 ? 1 :
+            pageNumber > (totalItems / pageSize) + 1 ? (totalItems / pageSize) + 1 : pageNumber;
         return (pageNumber, pageSize);
     }
 
     // GET: api/UserCollection
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserCollectibleItemDto>>> GetUserCollection([FromQuery] string? itemType, [FromQuery] CollectibleStatus? status, [FromQuery] string? filterTerm, int pageNumber = 1, int pageSize = 10)
+    public async Task<ActionResult<PagedResult<UserCollectibleItemDto>>> GetUserCollection(
+        [FromQuery] string? itemType,
+        [FromQuery] CollectibleStatus? status,
+        [FromQuery] string? filterTerm,
+        [FromQuery] string? orderBy,
+        int pageNumber = 1,
+        int pageSize = 10)
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return Unauthorized();
-        
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
+        // Retrieve and validate user ID
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var guidUserId))
         {
             return Unauthorized();
         }
 
-        var guidUserId = Guid.Parse(userId);
-
+        // Initialize the query with AsNoTracking for read-only optimization
         var query = context.UserCollectibleItems
-            .Include(uci => uci.CollectibleItem)
-            .ThenInclude(uci => uci.ExternalIds)
+            .AsNoTracking()
+            .Include(uci => uci.CollectibleItem.ExternalIds)
             .Where(uci => uci.UserId == guidUserId);
-        
-        if (itemType != null)
+
+        // Apply filters
+        if (!string.IsNullOrEmpty(itemType))
         {
             query = query.Where(uci => uci.CollectibleItem.ItemType == itemType);
         }
 
-        if (status != null)
+        if (status.HasValue)
         {
-            query = query.Where(uci => uci.Status == status);
+            query = query.Where(uci => uci.Status == status.Value);
         }
 
         if (!string.IsNullOrEmpty(filterTerm))
         {
-            query = query.Where(uci => uci.CollectibleItem.Title.ToLower().Contains(filterTerm.ToLower()) ||
-                                       uci.CollectibleItem.Description.ToLower().Contains(filterTerm.ToLower()));
-        }
-        
-        // Include seasons and episodes for shows if itemType is "Show"
-        if (itemType == "Show")
-        {
-            query = query.Include(uci => ((Show) uci.CollectibleItem).Seasons.OrderBy(season => season.SeasonNumber))
-                .ThenInclude(season => season.Episodes.OrderBy(episode => episode.EpisodeNumber));
+            query = query.Where(uci =>
+                EF.Functions.Like(uci.CollectibleItem.Title.ToLower(), $"%{filterTerm.ToLower()}%") ||
+                EF.Functions.Like(uci.CollectibleItem.Description.ToLower(), $"%{filterTerm.ToLower()}%"));
         }
 
+        // Conditional inclusion and projection for "Show" itemType
+        if (itemType == "Show")
+        {
+            query = query
+                .Include(uci => ((Show)uci.CollectibleItem).Seasons)
+                .ThenInclude(season => season.Episodes);
+        }
+
+        // Apply ordering before pagination
+        if (!string.IsNullOrEmpty(orderBy))
+        {
+            // Define a mapping between orderBy values and corresponding properties
+            var orderingMapping = new Dictionary<string, Expression<Func<UserCollectibleItem, object>>>
+            {
+                { "title", uci => uci.CollectibleItem.Title },
+                { "dateAdded", uci => uci.DateAdded },
+                { "releaseDate", uci => uci.CollectibleItem.ReleaseDate ?? DateTime.MinValue }
+            };
+
+            if (orderingMapping.TryGetValue(orderBy, out var orderExpression))
+            {
+                query = query.OrderBy(orderExpression);
+            }
+        }
+        else
+        {
+            // Default ordering if none specified
+            query = query.OrderBy(uci => uci.DateAdded);
+        }
+        
+        // Conditional inclusion and projection for "Show" itemType
+        if (itemType == "Show")
+        {
+            query = query
+                .Include(uci => ((Show)uci.CollectibleItem).Seasons)
+                .ThenInclude(season => season.Episodes);
+        }
+
+
+        // Get total count for pagination
         var totalItems = await query.CountAsync();
-        
-        // Check page and page size values
+
+        // Validate and adjust pagination parameters
         (pageNumber, pageSize) = ValidatePageValues(pageNumber, pageSize, totalItems);
-        
+
+        // Apply pagination
         var items = await query
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .OrderBy(uci => uci.CollectibleItem.Title)
             .ToListAsync();
-
+        
         var itemsDto = mapper.Map<List<UserCollectibleItemDto>>(items);
 
-        return Ok(new
+        // Return paged result
+        var pagedResult = new PagedResult<UserCollectibleItemDto>
         {
             TotalItems = totalItems,
             PageNumber = pageNumber,
             PageSize = pageSize,
             Items = itemsDto
-        });
+        };
+
+        return Ok(pagedResult);
     }
-    
+
     // GET: api/UserCollection/{itemId}
     [HttpGet("{itemId:guid}")]
     public async Task<ActionResult<UserCollectibleItemDto>> GetUserCollectionItem(Guid itemId)
@@ -118,7 +165,7 @@ public class UserCollectionController(
         {
             return NotFound();
         }
-        
+
         // Include seasons and episodes for shows if itemType is "Show"
         var itemType = item.CollectibleItem.ItemType;
         if (itemType == "Show")
@@ -158,12 +205,41 @@ public class UserCollectionController(
 
         return Ok();
     }
+    
+    // POST: api/UserCollection/multiple
+    [HttpPost("multiple")]
+    public async Task<IActionResult> AddMultipleItemsToCollection([FromBody] List<AddUserCollectibleItemDto> itemsDto)
+    {
+        var nameIdentifier = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = Guid.Parse(nameIdentifier ?? throw new InvalidOperationException());
+
+        var existingItems = await context.UserCollectibleItems
+            .Where(uci => uci.UserId == userId)
+            .Select(uci => uci.CollectibleItemId)
+            .ToListAsync();
+
+        var itemsToAdd = itemsDto
+            .Where(itemDto => !existingItems.Contains(itemDto.CollectibleItem.Id))
+            .Select(itemDto =>
+            {
+                var userCollectibleItem = mapper.Map<UserCollectibleItem>(itemDto);
+                userCollectibleItem.UserId = userId;
+                userCollectibleItem.DateAdded = DateTime.UtcNow;
+                return userCollectibleItem;
+            });
+
+        context.UserCollectibleItems.AddRange(itemsToAdd);
+        await context.SaveChangesAsync();
+
+        return Ok();
+    }
 
     // PUT: api/UserCollection/5
     [HttpPut("{itemId:guid}")]
     public async Task<IActionResult> UpdateItemStatus(Guid itemId, [FromBody] UserCollectibleItemDto itemDto)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        var userId =
+            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         var userCollectibleItem = await context.UserCollectibleItems
             .Include(userCollectibleItem => userCollectibleItem.CollectibleItem)
             .ThenInclude(ci => ((Show)ci).Seasons)
@@ -189,7 +265,8 @@ public class UserCollectionController(
     [HttpDelete("{itemId:guid}")]
     public async Task<IActionResult> RemoveItemFromCollection(Guid itemId)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        var userId =
+            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         var userCollectibleItem = await context.UserCollectibleItems
             .Include(userCollectibleItem => userCollectibleItem.CollectibleItem)
             .FirstOrDefaultAsync(uci => uci.UserId == userId && uci.CollectibleItemId == itemId);
@@ -206,4 +283,3 @@ public class UserCollectionController(
         return NoContent();
     }
 }
-

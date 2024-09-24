@@ -1,6 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DreckTrack_API.Models.Dto;
+using DreckTrack_API.Models.Dto.Items;
+using DreckTrack_API.Models.Dto.Items.Book;
+using DreckTrack_API.Models.Dto.Items.Game;
+using DreckTrack_API.Models.Dto.Items.Movie;
+using DreckTrack_API.Models.Dto.Items.Show;
 
 namespace DreckTrack_API.AutoMapper.TypeConverter;
 
@@ -109,6 +114,7 @@ public class CollectibleItemDtoConverter : JsonConverter<CollectibleItemDto>
             
             case GameDto game:
                 writer.WriteString("platform", game.Platform);
+                writer.WriteNumber("timePlayed", game.TimePlayed);
                 break;
 
             case ShowDto show:

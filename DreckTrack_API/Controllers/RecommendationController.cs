@@ -1,5 +1,6 @@
 using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Models;
+using DreckTrack_API.Models.Apis;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;

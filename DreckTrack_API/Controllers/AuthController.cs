@@ -1,6 +1,7 @@
 using AutoMapper;
 using DreckTrack_API.Encryption;
 using DreckTrack_API.Models.Dto;
+using DreckTrack_API.Models.Dto.Auth;
 using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Services;
 using Microsoft.AspNetCore.Authorization;

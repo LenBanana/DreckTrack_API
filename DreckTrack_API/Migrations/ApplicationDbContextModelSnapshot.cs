@@ -92,108 +92,7 @@ namespace DreckTrack_API.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<double?>("AverageRating")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("CoverImageUrl")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<List<string>>("Genres")
-                        .HasColumnType("text[]");
-
-                    b.Property<string>("ItemType")
-                        .IsRequired()
-                        .HasMaxLength(21)
-                        .HasColumnType("character varying(21)");
-
-                    b.Property<string>("Language")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("RatingsCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<List<string>>("Tags")
-                        .HasColumnType("text[]");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CollectibleItems");
-
-                    b.HasDiscriminator<string>("ItemType").HasValue("CollectibleItem");
-
-                    b.UseTphMappingStrategy();
-                });
-
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Episode", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<double?>("Duration")
-                        .HasColumnType("double precision");
-
-                    b.Property<int?>("EpisodeNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ExternalId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ReleaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("SeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("Watched")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SeasonId");
-
-                    b.ToTable("Episode");
-                });
-
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.ExternalId", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Information.ExternalId", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -257,7 +156,108 @@ namespace DreckTrack_API.Migrations
                     b.ToTable("UserShowEpisodeProgress");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Season", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("AverageRating")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("CoverImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<List<string>>("Genres")
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("RatingsCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<List<string>>("Tags")
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CollectibleItems");
+
+                    b.HasDiscriminator<string>("ItemType").HasValue("CollectibleItem");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Episode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("Duration")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("EpisodeNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Watched")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId");
+
+                    b.ToTable("Episode");
+                });
+
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Season", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -297,7 +297,7 @@ namespace DreckTrack_API.Migrations
                     b.ToTable("Season");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.UserCollectibleItem", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.UserCollectibleItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -506,9 +506,9 @@ namespace DreckTrack_API.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Book", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Book.Book", b =>
                 {
-                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
+                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem");
 
                     b.Property<List<string>>("Authors")
                         .HasColumnType("text[]");
@@ -528,19 +528,22 @@ namespace DreckTrack_API.Migrations
                     b.HasDiscriminator().HasValue("Book");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Game", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Game.Game", b =>
                 {
-                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
+                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem");
 
                     b.Property<string>("Platform")
                         .HasColumnType("text");
 
+                    b.Property<double>("TimePlayed")
+                        .HasColumnType("double precision");
+
                     b.HasDiscriminator().HasValue("Game");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Movie", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Movie.Movie", b =>
                 {
-                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
+                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem");
 
                     b.Property<double?>("Duration")
                         .HasColumnType("double precision");
@@ -548,25 +551,16 @@ namespace DreckTrack_API.Migrations
                     b.HasDiscriminator().HasValue("Movie");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Show", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Show", b =>
                 {
-                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem");
+                    b.HasBaseType("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem");
 
                     b.HasDiscriminator().HasValue("Show");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Episode", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Information.ExternalId", b =>
                 {
-                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Season", null)
-                        .WithMany("Episodes")
-                        .HasForeignKey("SeasonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.ExternalId", b =>
-                {
-                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem", "CollectibleItem")
+                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem", "CollectibleItem")
                         .WithMany("ExternalIds")
                         .HasForeignKey("CollectibleItemId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -577,7 +571,7 @@ namespace DreckTrack_API.Migrations
 
             modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Information.UserShowEpisodeProgress", b =>
                 {
-                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.UserCollectibleItem", "UserCollectibleItem")
+                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Items.UserCollectibleItem", "UserCollectibleItem")
                         .WithMany("EpisodeProgress")
                         .HasForeignKey("UserCollectibleItemId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -586,18 +580,27 @@ namespace DreckTrack_API.Migrations
                     b.Navigation("UserCollectibleItem");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Season", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Episode", b =>
                 {
-                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Show", null)
+                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Season", null)
+                        .WithMany("Episodes")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Season", b =>
+                {
+                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Show", null)
                         .WithMany("Seasons")
                         .HasForeignKey("ShowId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.UserCollectibleItem", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.UserCollectibleItem", b =>
                 {
-                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem", "CollectibleItem")
+                    b.HasOne("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem", "CollectibleItem")
                         .WithMany()
                         .HasForeignKey("CollectibleItemId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -680,22 +683,22 @@ namespace DreckTrack_API.Migrations
                     b.Navigation("UserCollectibleItems");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.CollectibleItem", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.CollectibleItem", b =>
                 {
                     b.Navigation("ExternalIds");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Season", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Season", b =>
                 {
                     b.Navigation("Episodes");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.UserCollectibleItem", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.UserCollectibleItem", b =>
                 {
                     b.Navigation("EpisodeProgress");
                 });
 
-            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Show", b =>
+            modelBuilder.Entity("DreckTrack_API.Models.Entities.Collectibles.Items.Show.Show", b =>
                 {
                     b.Navigation("Seasons");
                 });

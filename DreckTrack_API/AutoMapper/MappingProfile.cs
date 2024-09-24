@@ -1,9 +1,21 @@
 using AutoMapper;
 using DreckTrack_API.AutoMapper.TypeConverter;
 using DreckTrack_API.Models.Dto;
+using DreckTrack_API.Models.Dto.Auth;
+using DreckTrack_API.Models.Dto.Information;
+using DreckTrack_API.Models.Dto.Items;
+using DreckTrack_API.Models.Dto.Items.Book;
+using DreckTrack_API.Models.Dto.Items.Game;
+using DreckTrack_API.Models.Dto.Items.Movie;
+using DreckTrack_API.Models.Dto.Items.Show;
 using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Models.Entities.Collectibles;
 using DreckTrack_API.Models.Entities.Collectibles.Information;
+using DreckTrack_API.Models.Entities.Collectibles.Items;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Book;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Game;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Movie;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Show;
 
 namespace DreckTrack_API.AutoMapper;
 

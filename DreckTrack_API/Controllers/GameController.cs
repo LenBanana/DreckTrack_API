@@ -2,6 +2,7 @@ using AutoMapper;
 using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models;
+using DreckTrack_API.Models.Apis;
 using DreckTrack_API.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,10 +17,14 @@ namespace DreckTrack_API.Controllers;
 [Route("api/[controller]")]
 public class GameController(
     IHttpClientFactory httpClientFactory,
-    IOptions<RawgSettings> rawgSettings)
+    IOptions<RawgSettings> rawgSettings,
+    IOptions<SteamSettings> steamSettings)
     : ControllerBase
 {
 
+    /// <summary>
+    /// Get games from RAWG API
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetGames(
         [FromQuery] int? page,
@@ -88,6 +93,101 @@ public class GameController(
         var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
 
         var requestUrl = $"games?{queryString}";
+
+        try
+        {
+            var response = await client.GetAsync(requestUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                // Return the RAW JSON response directly
+                return Content(content, "application/json");
+            }
+
+            // Optionally, you can handle different status codes here
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, errorContent);
+        }
+        catch (Exception ex)
+        {
+            // Log the exception (not implemented here)
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Get the games owned by a Steam user
+    /// </summary>
+    /// <param name="steamId"></param>
+    /// <returns></returns>
+    [HttpGet("steam")]
+    public async Task<IActionResult> GetSteamGames(
+        [FromQuery] string steamId
+    )
+    {
+        var client = httpClientFactory.CreateClient("SteamClient");
+
+        // Build the query parameters
+        var queryParams = new Dictionary<string, string>
+        {
+            { "key", steamSettings.Value.ApiKey },
+            { "steamid", steamId },
+            { "format", "json" },
+            { "include_appinfo", "1" },
+            { "include_played_free_games", "1" }
+        };
+
+        // Construct the query string
+        var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+
+        var requestUrl = $"IPlayerService/GetOwnedGames/v0001/?{queryString}";
+
+        try
+        {
+            var response = await client.GetAsync(requestUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                // Return the RAW JSON response directly
+                return Content(content, "application/json");
+            }
+
+            // Optionally, you can handle different status codes here
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, errorContent);
+        }
+        catch (Exception ex)
+        {
+            // Log the exception (not implemented here)
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get the details of a Steam app
+    /// </summary>
+    /// <param name="appId"></param>
+    /// <returns></returns>
+    [HttpGet("steam/app")]
+    public async Task<IActionResult> GetSteamApp(
+        [FromQuery] string appId
+    )
+    {
+        using var client = new HttpClient();
+        client.BaseAddress = new Uri("https://store.steampowered.com/api/");
+
+        // Build the query parameters
+        var queryParams = new Dictionary<string, string>
+        {
+            { "appids", appId }
+        };
+
+        // Construct the query string
+        var queryString = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+
+        var requestUrl = $"appdetails?{queryString}";
 
         try
         {

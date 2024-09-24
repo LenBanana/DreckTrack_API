@@ -4,6 +4,7 @@ using DreckTrack_API.AutoMapper.TypeConverter;
 using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models;
+using DreckTrack_API.Models.Apis;
 using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -22,6 +23,11 @@ builder.Services.Configure<TestDiveSettings>(builder.Configuration.GetSection("T
 builder.Services.AddHttpClient("TestDiveClient", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["TestDive:BaseUrl"] ?? throw new InvalidOperationException());
+});
+builder.Services.Configure<SteamSettings>(builder.Configuration.GetSection("Steam"));
+builder.Services.AddHttpClient("SteamClient", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Steam:BaseUrl"] ?? throw new InvalidOperationException());
 });
 
 

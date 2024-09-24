@@ -1,4 +1,5 @@
 using DreckTrack_API.Models.Entities.Base;
+using DreckTrack_API.Models.Entities.Collectibles.Items;
 
 namespace DreckTrack_API.Models.Entities.Collectibles.Information;
 
