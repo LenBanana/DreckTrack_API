@@ -3,6 +3,7 @@ using System.Security.Claims;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using DreckTrack_API.Controllers.AuthFilter;
+using DreckTrack_API.Controllers.Utilities;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models.Dto;
 using DreckTrack_API.Models.Dto.Items;
@@ -10,6 +11,7 @@ using DreckTrack_API.Models.Entities;
 using DreckTrack_API.Models.Entities.Collectibles;
 using DreckTrack_API.Models.Entities.Collectibles.Items;
 using DreckTrack_API.Models.Entities.Collectibles.Items.Book;
+using DreckTrack_API.Models.Entities.Collectibles.Items.Game;
 using DreckTrack_API.Models.Entities.Collectibles.Items.Show;
 using DreckTrack_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -46,6 +48,7 @@ public class UserCollectionController(
         [FromQuery] CollectibleStatus? status,
         [FromQuery] string? filterTerm,
         [FromQuery] string? orderBy,
+        [FromQuery] string? orderDirection = "asc",
         int pageNumber = 1,
         int pageSize = 10)
     {
@@ -75,12 +78,13 @@ public class UserCollectionController(
 
         if (!string.IsNullOrEmpty(filterTerm))
         {
+            // Use case-insensitive comparison without ToLower()
             query = query.Where(uci =>
-                EF.Functions.Like(uci.CollectibleItem.Title.ToLower(), $"%{filterTerm.ToLower()}%") ||
-                EF.Functions.Like(uci.CollectibleItem.Description.ToLower(), $"%{filterTerm.ToLower()}%"));
+                EF.Functions.Like(uci.CollectibleItem.Title, $"%{filterTerm}%") ||
+                EF.Functions.Like(uci.CollectibleItem.Description, $"%{filterTerm}%"));
         }
 
-        // Conditional inclusion and projection for "Show" itemType
+        // Conditional inclusion for "Show" itemType
         if (itemType == "Show")
         {
             query = query
@@ -88,20 +92,35 @@ public class UserCollectionController(
                 .ThenInclude(season => season.Episodes);
         }
 
-        // Apply ordering before pagination
+        
+        // Normalize orderDirection
+        orderDirection = orderDirection?.ToLower();
+        if (orderDirection != "asc" && orderDirection != "desc")
+        {
+            orderDirection = "asc";
+        }
+        
+        // Get ordering options based on itemType
+        var orderingOptions = UserCollectibleItemOrderingOptions.GetOptions(itemType);
+
+        // Apply ordering
         if (!string.IsNullOrEmpty(orderBy))
         {
-            // Define a mapping between orderBy values and corresponding properties
-            var orderingMapping = new Dictionary<string, Expression<Func<UserCollectibleItem, object>>>
-            {
-                { "title", uci => uci.CollectibleItem.Title },
-                { "dateAdded", uci => uci.DateAdded },
-                { "releaseDate", uci => uci.CollectibleItem.ReleaseDate ?? DateTime.MinValue }
-            };
+            orderBy = orderBy.Replace(" ", ""); // Remove spaces for key comparison
+            var selectedOrder = orderingOptions
+                .FirstOrDefault(o => string.Equals(o.Key, orderBy, StringComparison.OrdinalIgnoreCase));
 
-            if (orderingMapping.TryGetValue(orderBy, out var orderExpression))
+            if (selectedOrder != null)
             {
-                query = query.OrderBy(orderExpression);
+                // Apply ascending or descending order based on orderDirection
+                query = orderDirection == "desc" 
+                    ? query.OrderByDescending(selectedOrder.OrderExpression)
+                    : query.OrderBy(selectedOrder.OrderExpression);
+            }
+            else
+            {
+                // Default ordering if orderBy is invalid
+                query = query.OrderBy(uci => uci.DateAdded);
             }
         }
         else
@@ -109,15 +128,6 @@ public class UserCollectionController(
             // Default ordering if none specified
             query = query.OrderBy(uci => uci.DateAdded);
         }
-        
-        // Conditional inclusion and projection for "Show" itemType
-        if (itemType == "Show")
-        {
-            query = query
-                .Include(uci => ((Show)uci.CollectibleItem).Seasons)
-                .ThenInclude(season => season.Episodes);
-        }
-
 
         // Get total count for pagination
         var totalItems = await query.CountAsync();
@@ -130,8 +140,12 @@ public class UserCollectionController(
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-        
+
+        // Map to DTO
         var itemsDto = mapper.Map<List<UserCollectibleItemDto>>(items);
+
+        // Extract available ordering display names
+        var orderingValues = orderingOptions.Select(o => o.DisplayName).ToList();
 
         // Return paged result
         var pagedResult = new PagedResult<UserCollectibleItemDto>
@@ -139,7 +153,10 @@ public class UserCollectionController(
             TotalItems = totalItems,
             PageNumber = pageNumber,
             PageSize = pageSize,
-            Items = itemsDto
+            Items = itemsDto,
+            OrderFields = orderingValues,
+            CurrentOrderBy = orderBy,
+            CurrentOrderDirection = orderDirection
         };
 
         return Ok(pagedResult);
@@ -205,7 +222,7 @@ public class UserCollectionController(
 
         return Ok();
     }
-    
+
     // POST: api/UserCollection/multiple
     [HttpPost("multiple")]
     public async Task<IActionResult> AddMultipleItemsToCollection([FromBody] List<AddUserCollectibleItemDto> itemsDto)
