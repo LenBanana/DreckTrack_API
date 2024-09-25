@@ -1,17 +1,12 @@
-using System.Linq.Expressions;
 using System.Security.Claims;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using DreckTrack_API.Controllers.AuthFilter;
 using DreckTrack_API.Controllers.Utilities;
 using DreckTrack_API.Database;
 using DreckTrack_API.Models.Dto;
 using DreckTrack_API.Models.Dto.Items;
 using DreckTrack_API.Models.Entities;
-using DreckTrack_API.Models.Entities.Collectibles;
 using DreckTrack_API.Models.Entities.Collectibles.Items;
-using DreckTrack_API.Models.Entities.Collectibles.Items.Book;
-using DreckTrack_API.Models.Entities.Collectibles.Items.Game;
 using DreckTrack_API.Models.Entities.Collectibles.Items.Show;
 using DreckTrack_API.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -49,6 +44,7 @@ public class UserCollectionController(
         [FromQuery] string? filterTerm,
         [FromQuery] string? orderBy,
         [FromQuery] string? orderDirection = "asc",
+        [FromQuery] ICollection<string>? excludeExternalIds = null,
         int pageNumber = 1,
         int pageSize = 10)
     {
@@ -64,6 +60,14 @@ public class UserCollectionController(
             .AsNoTracking()
             .Include(uci => uci.CollectibleItem.ExternalIds)
             .Where(uci => uci.UserId == guidUserId);
+        
+        // Exclude items with external IDs
+        if (excludeExternalIds is { Count: > 0 })
+        {
+            // Check the external IDs identifier, CollectibleItem.ExternalIds is a collection of ExternalId
+            query = query.Where(uci => uci.CollectibleItem.ExternalIds != null && !uci.CollectibleItem.ExternalIds
+                .Any(externalId => excludeExternalIds.Contains(externalId.Identifier)));
+        }
 
         // Apply filters
         if (!string.IsNullOrEmpty(itemType))
@@ -92,14 +96,14 @@ public class UserCollectionController(
                 .ThenInclude(season => season.Episodes);
         }
 
-        
+
         // Normalize orderDirection
         orderDirection = orderDirection?.ToLower();
         if (orderDirection != "asc" && orderDirection != "desc")
         {
             orderDirection = "asc";
         }
-        
+
         // Get ordering options based on itemType
         var orderingOptions = UserCollectibleItemOrderingOptions.GetOptions(itemType);
 
@@ -113,7 +117,7 @@ public class UserCollectionController(
             if (selectedOrder != null)
             {
                 // Apply ascending or descending order based on orderDirection
-                query = orderDirection == "desc" 
+                query = orderDirection == "desc"
                     ? query.OrderByDescending(selectedOrder.OrderExpression)
                     : query.OrderBy(selectedOrder.OrderExpression);
             }
@@ -198,6 +202,29 @@ public class UserCollectionController(
         var itemDto = mapper.Map<UserCollectibleItemDto>(item);
         return Ok(itemDto);
     }
+    
+    // An endpoint that takes a list of external IDs and returns only the external IDs that are not in the user's collection
+    // GET: api/UserCollection/external-ids
+    [HttpPost("external-ids")]
+    public async Task<ActionResult<ICollection<string>>> GetExternalIdsNotInCollection([FromBody] ICollection<string> externalIds)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var guidUserId = Guid.Parse(userId);
+
+        var existingExternalIds = await context.UserCollectibleItems
+            .Where(uci => uci.UserId == guidUserId && uci.CollectibleItem.ExternalIds != null)
+            .SelectMany(uci => uci.CollectibleItem.ExternalIds!)
+            .Select(externalId => externalId.Identifier)
+            .ToListAsync();
+
+        var externalIdsNotInCollection = externalIds.Except(existingExternalIds).ToList();
+        return Ok(externalIdsNotInCollection);
+    }
 
     // POST: api/UserCollection
     [HttpPost]
@@ -272,6 +299,45 @@ public class UserCollectionController(
         userCollectibleItem.UpdatedAt = DateTime.UtcNow;
         userCollectibleItem.CollectibleItem.UpdatedAt = DateTime.UtcNow;
         mapper.Map(itemDto, userCollectibleItem);
+
+        await context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // PUT: api/UserCollection/multiple
+    [HttpPut("multiple")]
+    public async Task<IActionResult> UpdateMultipleItemsStatus([FromBody] List<UserCollectibleItemDto> itemsDto)
+    {
+        var userId =
+            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        var userCollectibleItems = await context.UserCollectibleItems
+            .Include(userCollectibleItem => userCollectibleItem.CollectibleItem)
+            .ThenInclude(ci => ((Show)ci).Seasons)
+            .ThenInclude(s => s.Episodes)
+            .Where(uci => uci.UserId == userId)
+            .ToListAsync();
+
+        if (userCollectibleItems.Count == 0)
+        {
+            return NotFound();
+        }
+
+        foreach (var itemDto in itemsDto)
+        {
+            var userCollectibleItem = userCollectibleItems
+                .FirstOrDefault(uci => uci.CollectibleItemId == itemDto.CollectibleItemId);
+
+            if (userCollectibleItem == null)
+            {
+                continue;
+            }
+
+            // Update properties
+            userCollectibleItem.UpdatedAt = DateTime.UtcNow;
+            userCollectibleItem.CollectibleItem.UpdatedAt = DateTime.UtcNow;
+            mapper.Map(itemDto, userCollectibleItem);
+        }
 
         await context.SaveChangesAsync();
 
